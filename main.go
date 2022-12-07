@@ -21,7 +21,9 @@ func parseScript(script string) string {
 	startingWeirdFuncAnswer := ""
 	startingWeirdMathOperation := false
 	startingWeirdMathOperationAnswer := ""
-	scriptParts := strings.Split(strings.Split(script, "\r\n")[1], ";")
+	// if the script breaks, try updating `[2]`
+	// twitter thought they were funny when changing the script to add another new line.
+	scriptParts := strings.Split(strings.Split(script, "\r\n")[2], ";")
 	answers := make(map[string]int, 4)
 	for _, part := range scriptParts {
 		// this gets the initial numbers
@@ -100,7 +102,7 @@ func parseScript(script string) string {
 		if weirdFuncEndingRegex.MatchString(part) && startingWeirdFunc {
 			startingWeirdFunc = false
 			things := strings.Split(part[2:len(part)-1], ",")
-			answers[startingWeirdFuncAnswer] = weirdFunc1(answers[things[0]], answers[things[1]], answers[things[2]])
+			answers[startingWeirdFuncAnswer] = weirdFunc1([3]int{answers[things[0]], answers[things[1]], answers[things[2]]})
 			startingWeirdFuncAnswer = ""
 		}
 		// starting of weird math operation thingy
@@ -135,22 +137,30 @@ func main() {
 	fmt.Println(parseScript(string(f)))
 }
 
-// This shit took me far too long but it's the aids part that does shit with divs and whatnot, looks really aids but is actually doing something really simple.
-func weirdFunc1(third, second, fourth int) int {
+// This code may look weird but it's SLIGHTLY more efficient than the 1:1 ported code from the actual challange
+func weirdFunc1(numbers [3]int) int {
 	num := 0
-	for i := 0; i < 8; i++ {
-		if (third & 1) == 0 {
-			num += third
+	for _, number := range numbers {
+		copy := abs(number)
+		if copy > 1 {
+			start := number
+			i := 0
+			for copy > 1 && i < 8 {
+				i++
+				if (start & 1) == 0 {
+					num += start
+				}
+				start = start >> 1
+				copy = abs(start)
+			}
 		}
-		if (second & 1) == 0 {
-			num += second
-		}
-		if (fourth & 1) == 0 {
-			num += fourth
-		}
-		third = third >> 1
-		second = second >> 1
-		fourth = fourth >> 1
 	}
 	return num % 256
+}
+
+func abs(a int) int {
+	if a < 0 {
+		return -a
+	}
+	return a
 }
